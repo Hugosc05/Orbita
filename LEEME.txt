@@ -1,0 +1,31 @@
+ÓRBITA PLANNER — paquete PWA
+============================
+
+Contenido
+  index.html ............ la aplicación completa
+  manifest.webmanifest .. datos de instalación (nombre, iconos, atajos)
+  sw.js ................. service worker: hace que funcione sin conexión
+  icon-*.png / icon.svg . iconos de la app
+  apple-touch-icon.png .. icono para iPhone y iPad
+
+Para usarla sin instalar
+  Abre index.html con doble clic. Funciona todo menos la instalación
+  y el modo sin conexión, que necesitan un servidor.
+
+Para instalarla como app (recomendado)
+  Sube esta carpeta entera a cualquier hosting con HTTPS
+  (GitHub Pages, Netlify, Vercel, Cloudflare Pages, tu propio servidor).
+  Entra desde el navegador:
+    Android / Chrome / Edge: aparecerá "Instalar" en el menú, o usa
+      Ajustes de cuenta → Instalar Órbita dentro de la app.
+    iPhone / iPad: Compartir → Añadir a pantalla de inicio.
+
+Para probar en local con servidor
+  python3 -m http.server 8080
+  y abre http://localhost:8080
+
+Dónde viven tus datos
+  En el navegador donde la uses (localStorage), separados por perfil.
+  No hay servidor ni cuenta en la nube: si borras los datos del
+  navegador, se van. Haz copias con el menú ⋯ → Copia de seguridad.
+  El PIN del perfil evita miradas ajenas, pero no cifra nada.
