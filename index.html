@@ -2,16 +2,18 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Órbita Planner</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <meta name="application-name" content="Órbita">
 <meta name="apple-mobile-web-app-title" content="Órbita">
-<meta name="theme-color" content="#6c5ce7">
+<meta name="theme-color" content="#e9ecf6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171a2a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -100,9 +102,17 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+html{overflow-x:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 body{
   margin:0;
   min-height:100vh;
+  overflow-x:hidden;
+  overscroll-behavior-y:none;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  user-select:none;
+  -webkit-user-select:none;
   background:var(--bg);
   color:var(--ink);
   font-family:"DM Sans",system-ui,-apple-system,Segoe UI,sans-serif;
@@ -124,6 +134,8 @@ body:not(.authed) .shell,body:not(.authed) .tabbar{display:none}
 @keyframes b4{0%{transform:translate3d(0,0,0) scale(1.05)}100%{transform:translate3d(18vmax,-10vmax,0) scale(.9)}}
 h1,h2,h3,h4{font-family:"Outfit",system-ui,sans-serif;margin:0;text-wrap:balance;letter-spacing:-.015em}
 button,input,select,textarea{font:inherit;color:inherit}
+input,textarea,[contenteditable]{user-select:text;-webkit-user-select:text}
+.notes-sel,.io-area{user-select:text;-webkit-user-select:text}
 button{cursor:pointer;border:0;background:none}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
 .mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
@@ -167,9 +179,9 @@ button{cursor:pointer;border:0;background:none}
 .shell{
   max-width:1560px;
   margin:0 auto;
-  padding-block:18px 40px;
-  padding-left:18px;
-  padding-right:18px;
+  padding-block:calc(18px + env(safe-area-inset-top)) 40px;
+  padding-left:max(18px,env(safe-area-inset-left));
+  padding-right:max(18px,env(safe-area-inset-right));
   display:flex;
   flex-direction:column;
   gap:18px;
@@ -227,11 +239,14 @@ button{cursor:pointer;border:0;background:none}
 .cta svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
 .menu-wrap{position:relative}
 .menu{
-  position:absolute;right:0;top:54px;width:250px;border-radius:var(--r-lg);padding:8px;z-index:40;
+  position:fixed;right:18px;top:78px;width:252px;border-radius:var(--r-lg);padding:8px;z-index:40;
   opacity:0;visibility:hidden;transform:translateY(-10px) scale(.92);transform-origin:top right;
   transition:opacity .3s var(--ease),transform .5s var(--spring),visibility .3s;
 }
 .menu.open{opacity:1;visibility:visible;transform:none}
+#menuScrim{position:fixed;inset:0;z-index:36;background:rgba(8,10,22,.44);opacity:0;visibility:hidden;transition:opacity .3s var(--ease),visibility .3s}
+#menuScrim.on{opacity:1;visibility:visible}
+@media(min-width:701px){#menuScrim{display:none}}
 .menu button{
   width:100%;display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
   font-size:13.8px;font-weight:500;text-align:left;transition:background .15s ease;
@@ -376,7 +391,7 @@ button{cursor:pointer;border:0;background:none}
 .ev .tm{flex:none;font-weight:500;font-size:10.5px;opacity:.82}
 .ev.done{opacity:.5;text-decoration:line-through}
 .more{font-size:11px;color:var(--muted);padding-left:4px}
-.grid-scroll{overflow-x:auto;overflow-y:auto;max-height:min(70vh,720px);padding-bottom:6px}
+.grid-scroll{overflow-x:auto;overflow-y:auto;max-height:min(70vh,720px);max-height:min(70dvh,720px);padding-bottom:6px;overscroll-behavior:contain}
 .tgrid{display:grid;gap:0;position:relative}
 .tgrid.w7{min-width:680px;grid-template-columns:56px repeat(7,minmax(0,1fr))}
 .tgrid.w3{grid-template-columns:46px repeat(3,minmax(0,1fr))}
@@ -445,7 +460,7 @@ button{cursor:pointer;border:0;background:none}
 .backdrop.open{display:grid;animation:fade .35s var(--ease)}
 @keyframes fade{from{opacity:0;backdrop-filter:blur(0px)}to{opacity:1;backdrop-filter:blur(10px)}}
 .backdrop.open{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.modal{width:min(540px,100%);max-height:88vh;overflow-y:auto;border-radius:var(--r-xl);padding:24px;animation:pop .55s var(--spring)}
+.modal{width:min(540px,100%);max-height:88vh;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--r-xl);padding:24px;animation:pop .55s var(--spring)}
 @keyframes pop{0%{opacity:0;transform:translateY(24px) scale(.94)}60%{opacity:1}100%{opacity:1;transform:none}}
 .grab{display:none;width:44px;height:5px;border-radius:99px;background:var(--grid-line);margin:0 auto 14px;flex:none}
 .modal h3{font-size:20px;font-weight:600;margin-bottom:18px}
@@ -578,7 +593,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
 .switch.on{background:var(--mint)}
 .switch.on i{transform:translateX(19px)}
 .tabbar{
-  display:none;position:fixed;z-index:38;
+  display:none;position:fixed;z-index:38;touch-action:none;
   left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));
   bottom:calc(12px + env(safe-area-inset-bottom));
   padding:7px;border-radius:28px;gap:4px;
@@ -599,6 +614,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
 }
 .tabbar .dot{position:absolute;top:5px;right:calc(50% - 24px);min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--coral);color:#fff;font-size:9.5px;font-weight:700;display:grid;place-items:center;z-index:3}
 @keyframes paneIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes paneInR{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes paneInL{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
 @keyframes sheetUp{from{transform:translateY(101%)}to{transform:none}}
 @media(max-width:1320px){
   .layout{grid-template-columns:284px minmax(0,1fr)}
@@ -614,9 +631,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   body[data-tab="cal"] [data-pane="cal"],
   body[data-tab="agenda"] [data-pane="agenda"],
   body[data-tab="inbox"] [data-pane="inbox"],
-  body[data-tab="stats"] [data-pane="stats"]{display:block;animation:paneIn .45s var(--ease)}
+  body[data-tab="stats"] [data-pane="stats"]{display:block;animation:var(--pane-anim,paneIn) .42s var(--ease)}
   .list{max-height:none}
-  .topbar{position:sticky;top:8px;z-index:30}
+  .topbar{position:sticky;top:calc(8px + env(safe-area-inset-top));z-index:30}
   .day{min-height:78px}
   .day .n{width:23px;height:23px;font-size:12px}
   .row-act{opacity:1}
@@ -626,7 +643,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
 }
 @media(max-width:700px){
   :root{--blur:18px}
-  .shell{padding-left:13px;padding-right:13px;padding-block:12px 0}
+  .shell{padding-left:max(13px,env(safe-area-inset-left));padding-right:max(13px,env(safe-area-inset-right));padding-block:calc(12px + env(safe-area-inset-top)) 0}
   .brand p{display:none}
   .brand h1{font-size:19px}
   .mark{width:40px;height:40px;border-radius:14px}
@@ -646,11 +663,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   .icon-btn{width:42px;height:42px}
   .panel{padding:17px;border-radius:24px}
   .cal-head{gap:9px}
-  .cal-head{gap:8px;margin-bottom:13px}
-  .cal-head h2{font-size:20px;width:100%;order:-1;margin:0}
+  .cal-head{gap:7px;margin-bottom:12px}
+  .cal-head h2{font-size:19px;margin-right:auto}
   .cal-head .nav-btn{width:38px;height:38px;border-radius:13px}
-  .cal-head .today-btn{padding:10px 14px;font-size:13px}
-  #prevBtn{margin-left:auto}
+  .cal-head .today-btn{padding:10px 13px;font-size:13px}
   .month{gap:5px}
   .dow{gap:5px}
   .dow span{font-size:10px;letter-spacing:.06em}
@@ -665,9 +681,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   .modal-actions .grow{display:none}
   .toast{bottom:calc(98px + env(safe-area-inset-bottom))}
   .hm i{width:11px;height:11px}
+  .menu{left:12px;right:12px;top:auto;bottom:calc(102px + env(safe-area-inset-bottom));width:auto;max-height:min(62dvh,560px);overflow-y:auto;overscroll-behavior:contain;border-radius:30px;padding:10px;transform-origin:bottom center;transform:translateY(20px) scale(.96)}
+  .menu button{padding:12px 13px;font-size:14.5px;border-radius:17px;gap:12px}
+  .menu button svg{width:19px;height:19px}
+  .menu .sep{margin:5px 12px}
+  .gate{padding:calc(20px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom))}
+  .gate-card{padding:26px 20px}
 }
 @media(max-width:430px){
-  .day{min-height:58px;padding:5px}
+  .day{min-height:54px;padding:5px}
   .day .items{flex-direction:row;flex-wrap:wrap;gap:3px}
   .day .items .ev{width:7px;height:7px;padding:0;border-radius:50%;background:currentColor!important;box-shadow:none}
   .day .items .ev .lab,.day .items .ev .glyph{display:none}
@@ -718,20 +740,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
       <button id="menuBtn" class="icon-btn nm" type="button" aria-label="Más opciones" aria-haspopup="true">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="19" r="1.4"></circle></svg>
       </button>
-      <div class="menu glass" id="menu">
-        <button data-act="notify" type="button"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"></path></svg>Recordatorios</button>
-        <button data-act="export" type="button"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>Copia de seguridad</button>
-        <button data-act="ics" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Exportar a calendario</button>
-        <button data-act="import" type="button"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 8l5-5 5 5M12 3v12"></path></svg>Importar datos</button>
-        <div class="sep"></div>
-        <button data-act="prefs" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.4 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.4-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z"></path></svg>Ajustes de cuenta</button>
-        <button data-act="install" type="button" hidden id="installItem"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"></path></svg>Instalar la app</button>
-        <button data-act="switch" type="button"><svg viewBox="0 0 24 24"><path d="M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M3 8V5a2 2 0 0 1 2-2h3"></path><circle cx="12" cy="10" r="2.6"></circle><path d="M7.5 17a4.8 4.8 0 0 1 9 0"></path></svg>Cambiar de perfil</button>
-        <div class="sep"></div>
-        <button data-act="trash" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-13M9 7V4h6v3"></path></svg>Papelera</button>
-        <button data-act="tour" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.8-.9 1.4v.4M12 17h.01"></path></svg>Ver la guía</button>
-        <button data-act="keys" type="button"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path></svg>Atajos de teclado</button>
-      </div>
+
     </div>
     <button id="newBtn" class="cta" type="button">
       <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
@@ -969,6 +978,23 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
 </div>
 
 <input type="file" id="bgFile" accept="image/*" hidden>
+
+<div id="menuScrim"></div>
+
+<div class="menu glass" id="menu">
+  <button data-act="notify" type="button"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"></path></svg>Recordatorios</button>
+  <button data-act="export" type="button"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>Copia de seguridad</button>
+  <button data-act="ics" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Exportar a calendario</button>
+  <button data-act="import" type="button"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 8l5-5 5 5M12 3v12"></path></svg>Importar datos</button>
+  <div class="sep"></div>
+  <button data-act="prefs" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.4 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.4-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z"></path></svg>Ajustes de cuenta</button>
+  <button data-act="install" type="button" hidden id="installItem"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"></path></svg>Instalar la app</button>
+  <button data-act="switch" type="button"><svg viewBox="0 0 24 24"><path d="M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M3 8V5a2 2 0 0 1 2-2h3"></path><circle cx="12" cy="10" r="2.6"></circle><path d="M7.5 17a4.8 4.8 0 0 1 9 0"></path></svg>Cambiar de perfil</button>
+  <div class="sep"></div>
+  <button data-act="trash" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-13M9 7V4h6v3"></path></svg>Papelera</button>
+  <button data-act="tour" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.8-.9 1.4v.4M12 17h.01"></path></svg>Ver la guía</button>
+  <button data-act="keys" type="button"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path></svg>Atajos de teclado</button>
+</div>
 
 <div class="tour" id="tour" hidden>
   <div id="tourHole"></div>
@@ -1688,10 +1714,13 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   document.addEventListener("click",e=>{
     if(Date.now()-drag.last<250)return;
     const menuBtn=e.target.closest("#menuBtn");
-    if(menuBtn){el("menu").classList.toggle("open");return;}
-    if(!e.target.closest("#menu"))el("menu").classList.remove("open");
+    if(menuBtn){
+      if(el("menu").classList.contains("open"))closeMenu();else openMenu();
+      return;
+    }
+    if(!e.target.closest("#menu"))closeMenu();
     const act=e.target.closest("[data-act]");
-    if(act){el("menu").classList.remove("open");menuAction(act.dataset.act);return;}
+    if(act){closeMenu();menuAction(act.dataset.act);return;}
     const tick=e.target.closest("[data-tick]");
     if(tick){
       const r=fromKey(tick.dataset.tick);
@@ -2062,7 +2091,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
     if(e.key==="Escape"){
       if(openModalNow)closeModal();
       if(openSheet)el("sheet").classList.remove("open");
-      el("menu").classList.remove("open");
+      closeMenu();
       return;
     }
     if(openModalNow&&e.key==="Enter"&&e.target.id==="fTitle"){commit();return;}
@@ -2281,7 +2310,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
     gatePin="";
     document.body.classList.remove("authed");
     el("gate").hidden=false;
-    el("menu").classList.remove("open");
+    closeMenu();
     renderGate();
   }
   function renderGate(){
@@ -2453,7 +2482,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   function openPrefs(){
     renderPrefs();
     el("prefs").classList.add("open");
-    el("menu").classList.remove("open");
+    closeMenu();
   }
   el("meBtn").addEventListener("click",openPrefs);
   el("pfClose").addEventListener("click",()=>el("prefs").classList.remove("open"));
@@ -2627,7 +2656,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   function startTour(){
     tourI=0;
     el("tour").hidden=false;
-    el("menu").classList.remove("open");
+    closeMenu();
     el("prefs").classList.remove("open");
     stepTour();
   }
@@ -2691,6 +2720,26 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
     placeTour(s&&s.sel?document.querySelector(s.sel):null);
   });
 
+  function openMenu(){
+    const m=el("menu");
+    if(window.innerWidth<=700){
+      m.style.left="";m.style.right="";m.style.top="";m.style.bottom="";
+    }else{
+      const r=el("menuBtn").getBoundingClientRect();
+      m.style.left=Math.max(12,Math.min(r.right-252,window.innerWidth-264))+"px";
+      m.style.top=(r.bottom+12)+"px";
+      m.style.right="auto";
+      m.style.bottom="auto";
+    }
+    m.classList.add("open");
+    el("menuScrim").classList.add("on");
+  }
+  function closeMenu(){
+    el("menu").classList.remove("open");
+    el("menuScrim").classList.remove("on");
+  }
+  el("menuScrim").addEventListener("click",closeMenu);
+
   function placeSeg(){
     const seg=el("viewSeg"),ind=el("segInd"),act=seg.querySelector("button.on");
     if(!act)return;
@@ -2706,12 +2755,13 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
     ind.style.width=act.offsetWidth+"px";
     ind.style.transform="translateX("+act.offsetLeft+"px)";
   }
-  function setTab(t){
+  function setTab(t,quiet){
+    if(document.body.dataset.tab===t)return;
     document.body.dataset.tab=t;
     el("tabbar").querySelectorAll("[data-tabgo]").forEach(b=>b.classList.toggle("on",b.dataset.tabgo===t));
     requestAnimationFrame(placeTab);
     try{localStorage.setItem("orbita.tab",t);}catch(e){}
-    if(window.innerWidth<=980)window.scrollTo({top:0,behavior:"smooth"});
+    if(window.innerWidth<=980)window.scrollTo(quiet?{top:0}:{top:0,behavior:"smooth"});
   }
   function paintBadge(){
     const d=el("tabDot"),n=state.items.filter(i=>!i.date).length;
@@ -2720,7 +2770,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
   }
   el("tabbar").addEventListener("click",e=>{
     const b=e.target.closest("[data-tabgo]");
-    if(b)setTab(b.dataset.tabgo);
+    if(!b||scrubMoved)return;
+    const from=TABS.indexOf(document.body.dataset.tab||"cal");
+    const to=TABS.indexOf(b.dataset.tabgo);
+    document.body.style.setProperty("--pane-anim",to>from?"paneInR":"paneInL");
+    setTab(b.dataset.tabgo);
   });
 
   let sEl=null,sx=0,sy=0,sTick=false;
@@ -2753,19 +2807,57 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
     setTimeout(()=>{s.remove();},660);
   },{passive:true});
 
+  const TABS=["cal","agenda","inbox","stats"];
   let swipe=null;
-  el("calBody").addEventListener("touchstart",e=>{
-    if(e.touches.length!==1||drag.on){swipe=null;return;}
-    swipe={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
+  function gesturesBlocked(){
+    return drag.on||!el("gate").hidden||!el("tour").hidden||
+      el("backdrop").classList.contains("open")||el("sheet").classList.contains("open")||
+      el("prefs").classList.contains("open")||el("menu").classList.contains("open");
+  }
+  const shell=document.querySelector(".shell");
+  shell.addEventListener("touchstart",e=>{
+    if(window.innerWidth>980||e.touches.length!==1||gesturesBlocked()){swipe=null;return;}
+    const t=e.touches[0];
+    swipe={x:t.clientX,y:t.clientY,t:Date.now(),grid:!!e.target.closest(".month,.tgrid")};
   },{passive:true});
-  el("calBody").addEventListener("touchend",e=>{
-    if(!swipe||drag.on){swipe=null;return;}
+  shell.addEventListener("touchend",e=>{
+    if(!swipe||gesturesBlocked()){swipe=null;return;}
     const t=e.changedTouches[0];
-    const dx=t.clientX-swipe.x,dy=t.clientY-swipe.y,ms=Date.now()-swipe.t;
+    const dx=t.clientX-swipe.x,dy=t.clientY-swipe.y,ms=Date.now()-swipe.t,grid=swipe.grid;
     swipe=null;
-    if(ms>700||Math.abs(dx)<64||Math.abs(dy)>52)return;
-    shift(dx<0?1:-1);
+    if(ms>650||Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.4)return;
+    if(grid){shift(dx<0?1:-1);return;}
+    goTab(dx<0?1:-1);
   },{passive:true});
+  function goTab(dir){
+    const i=TABS.indexOf(document.body.dataset.tab||"cal");
+    const n=Math.max(0,Math.min(TABS.length-1,i+dir));
+    if(n===i)return;
+    document.body.style.setProperty("--pane-anim",dir>0?"paneInR":"paneInL");
+    setTab(TABS[n]);
+  }
+
+  let scrub=false,scrubMoved=false;
+  el("tabbar").addEventListener("pointerdown",e=>{
+    scrub=true;scrubMoved=false;
+    try{el("tabbar").setPointerCapture(e.pointerId);}catch(err){}
+  });
+  el("tabbar").addEventListener("pointermove",e=>{
+    if(!scrub)return;
+    const under=document.elementFromPoint(e.clientX,e.clientY);
+    const b=under&&under.closest("[data-tabgo]");
+    if(b&&b.dataset.tabgo!==document.body.dataset.tab){
+      const from=TABS.indexOf(document.body.dataset.tab||"cal");
+      const to=TABS.indexOf(b.dataset.tabgo);
+      document.body.style.setProperty("--pane-anim",to>from?"paneInR":"paneInL");
+      scrubMoved=true;
+      setTab(b.dataset.tabgo,true);
+    }
+  });
+  function endScrub(){scrub=false;}
+  el("tabbar").addEventListener("pointerup",endScrub);
+  el("tabbar").addEventListener("pointercancel",endScrub);
+  window.addEventListener("pointerup",endScrub);
 
   function bindGrab(backId,close){
     const back=el(backId);
@@ -2811,7 +2903,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-ra
     lastSpan=span();
     let savedTab="cal";
     try{savedTab=localStorage.getItem("orbita.tab")||"cal";}catch(e){}
-    setTab(["cal","agenda","inbox","stats"].includes(savedTab)?savedTab:"cal");
+    document.body.dataset.tab="";
+    setTab(TABS.includes(savedTab)?savedTab:"cal",true);
     render();
     requestAnimationFrame(()=>{placeSeg();placeTab();});
     if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{placeSeg();placeTab();});
