@@ -27,6 +27,7 @@ export function toClientItem(row) {
     skips: parse(row.skips, []),
     source: row.source || "",
     extId: row.ext_id || "",
+    kind: row.kind === "event" ? "event" : "task",
     created: Number(row.created) || nowMs()
   };
 }
@@ -49,6 +50,7 @@ export function toRowValues(userId, item, trashed, trashedAt) {
     JSON.stringify(Array.isArray(item.skips) ? item.skips : []),
     item.source || "",
     item.extId || "",
+    item.kind === "event" ? "event" : "task",
     Number(item.created) || at,
     at,
     trashed ? 1 : 0,
@@ -57,13 +59,13 @@ export function toRowValues(userId, item, trashed, trashedAt) {
 }
 
 const INSERT_SQL = `INSERT INTO items
-  (id, user_id, title, cat, date, time, dur, notes, done, subs, rep, done_dates, skips, source, ext_id, created, updated, trashed, trashed_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, user_id, title, cat, date, time, dur, notes, done, subs, rep, done_dates, skips, source, ext_id, kind, created, updated, trashed, trashed_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     title = excluded.title, cat = excluded.cat, date = excluded.date, time = excluded.time,
     dur = excluded.dur, notes = excluded.notes, done = excluded.done, subs = excluded.subs,
     rep = excluded.rep, done_dates = excluded.done_dates, skips = excluded.skips,
-    source = excluded.source, ext_id = excluded.ext_id, updated = excluded.updated,
+    source = excluded.source, ext_id = excluded.ext_id, kind = excluded.kind, updated = excluded.updated,
     trashed = excluded.trashed, trashed_at = excluded.trashed_at`;
 
 export function getState(userId) {

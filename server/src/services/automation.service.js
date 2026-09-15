@@ -30,6 +30,7 @@ function applyEvent(userId, evento, mail) {
       dur: dur || Number(twin.dur) || 60,
       notes: twin.notes && twin.notes.includes("Outlook") ? notes : twin.notes,
       source: "outlook",
+      kind: "event",
       extId: mail.id || ""
     });
     return { action: moved ? "movido" : "actualizado", item };
@@ -42,6 +43,7 @@ function applyEvent(userId, evento, mail) {
     dur: dur || 60,
     notes,
     source: "outlook",
+    kind: "event",
     extId: mail.id || ""
   });
   return { action: "creado", item };

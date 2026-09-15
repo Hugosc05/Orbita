@@ -69,6 +69,31 @@ SEGURIDAD
     COOKIE_SECURE=1 y servidor detrás de HTTPS
     TRUST_PROXY=1 si va tras nginx, Caddy o Cloudflare
 
+EVENTOS Y TAREAS
+  Cada cosa del calendario es de un tipo y se elige en la ventana de nuevo
+  evento, en el selector Tipo.
+    Tarea: se puede marcar como hecha, admite pasos y cuenta para el
+      progreso, la racha y el mapa del año.
+    Evento: ocupa su hueco y ya está. No tiene casilla para marcar, no
+      suma ni resta al progreso y en su lugar aparece un distintivo de
+      calendario. Las clases, el gimnasio o cualquier cita van aquí.
+  Los eventos que crea la IA desde Outlook también entran como eventos.
+
+HORARIO DE CLASES
+  Tu perfil -> Ajustes de cuenta -> Horario de clases.
+  La rejilla va de las 8:00 a las 22:00 y cubre los siete días, así que
+  entran también las clases de tarde. Escribes la asignatura, el aula o
+  el profesor, marcas los días, pones la hora de inicio y de fin y pulsas
+  Añadir al horario. La vista previa se actualiza al momento y abajo
+  queda la lista para editar o quitar cada asignatura.
+  Desde y Hasta marcan el periodo: cada asignatura se guarda como un
+  evento semanal que se repite entre esas dos fechas.
+  La categoría por defecto es Uni, pero puedes elegir cualquiera de las
+  tuyas: por ejemplo Gym para los entrenamientos.
+  Al pulsar Guardar horario todo pasa al calendario como eventos. Si
+  vuelves a abrir la ventana aparece lo que ya tenías, así que sirve
+  igual para cambiar una hora a mitad de curso.
+
 DIFERENCIAS ENTRE MÓVIL Y ESCRITORIO
   La interfaz es la misma; cambia el comportamiento.
   Móvil: todo por eventos táctiles, áreas de toque de 26 a 56 px,

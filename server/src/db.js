@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS items (
   skips TEXT DEFAULT '[]',
   source TEXT DEFAULT '',
   ext_id TEXT DEFAULT '',
+  kind TEXT DEFAULT 'task',
   created INTEGER NOT NULL,
   updated INTEGER NOT NULL,
   trashed INTEGER DEFAULT 0,
@@ -95,5 +96,6 @@ const columns = table => db.prepare("PRAGMA table_info(" + table + ")").all().ma
 
 if (!columns("oauth_states").includes("verifier")) db.exec("ALTER TABLE oauth_states ADD COLUMN verifier TEXT DEFAULT ''");
 if (!columns("outlook_accounts").includes("linked_at")) db.exec("ALTER TABLE outlook_accounts ADD COLUMN linked_at INTEGER DEFAULT 0");
+if (!columns("items").includes("kind")) db.exec("ALTER TABLE items ADD COLUMN kind TEXT DEFAULT 'task'");
 
 export const nowMs = () => Date.now();
