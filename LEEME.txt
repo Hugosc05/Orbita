@@ -1,31 +1,185 @@
-ÓRBITA PLANNER — paquete PWA
-============================
+ÓRBITA PLANNER — proyecto full-stack
+====================================
 
-Contenido
-  index.html ............ la aplicación completa
-  manifest.webmanifest .. datos de instalación (nombre, iconos, atajos)
-  sw.js ................. service worker: hace que funcione sin conexión
-  icon-*.png / icon.svg . iconos de la app
-  apple-touch-icon.png .. icono para iPhone y iPad
+ESTRUCTURA
+  index.html ................ la app en modo local (doble clic y funciona sin servidor)
+  sw.js / manifest / icon-* . PWA de la versión local
+  public/ ................... lo que sirve el servidor (misma app)
+  server/ ................... backend Node + Express + SQLite
+    package.json
+    .env.example
+    data/orbita.db .......... se crea solo al arrancar
+    src/
+      index.js .............. arranque, estáticos y rutas
+      config.js ............. variables de entorno
+      security.js ........... helmet, CSP por hash, límites y saneado
+      db.js ................. esquema SQLite
+      auth.js ............... perfiles, PIN con bcrypt y JWT
+      routes/
+        auth.routes.js ...... /api/auth
+        state.routes.js ..... /api/state
+        events.routes.js .... /api/events y /api/categories
+        outlook.routes.js ... /api/outlook
+        stream.routes.js .... /api/stream (SSE)
+      services/
+        items.service.js .... lectura y escritura de eventos y categorías
+        graph.service.js .... OAuth y lectura del buzón con Microsoft Graph
+        llm.service.js ...... llamada a la IA y parseo del JSON estricto
+        automation.service.js  correo -> IA -> calendario
+      util/
+        crypto.js ........... cifrado AES-GCM de los tokens de Microsoft
+        dates.js ............ fechas y comparación de títulos
+        sse.js .............. avisos en vivo al navegador
 
-Para usarla sin instalar
-  Abre index.html con doble clic. Funciona todo menos la instalación
-  y el modo sin conexión, que necesitan un servidor.
+PUESTA EN MARCHA
+  1. cd server
+  2. npm install
+  3. copia .env.example a .env y rellena lo que quieras usar
+  4. npm start
+  5. abre http://localhost:4000
 
-Para instalarla como app (recomendado)
-  Sube esta carpeta entera a cualquier hosting con HTTPS
-  (GitHub Pages, Netlify, Vercel, Cloudflare Pages, tu propio servidor).
-  Entra desde el navegador:
-    Android / Chrome / Edge: aparecerá "Instalar" en el menú, o usa
-      Ajustes de cuenta → Instalar Órbita dentro de la app.
-    iPhone / iPad: Compartir → Añadir a pantalla de inicio.
+  Sin .env también arranca: la app funciona completa con base de datos,
+  y las automatizaciones quedan desactivadas hasta que pongas las claves.
 
-Para probar en local con servidor
-  python3 -m http.server 8080
-  y abre http://localhost:8080
+MODOS DE FUNCIONAMIENTO
+  Con servidor: la app detecta /api/health y guarda todo en SQLite.
+    Los perfiles, el PIN (bcrypt), los eventos, las categorías, la papelera
+    y las preferencias viven en el servidor. Si se cae la conexión sigue
+    funcionando con una copia local y sincroniza al volver.
+  Sin servidor: abriendo index.html directamente, todo se guarda en el
+    navegador como hasta ahora. Desde Ajustes de cuenta puedes escribir la
+    dirección del servidor para cambiar de modo.
 
-Dónde viven tus datos
-  En el navegador donde la uses (localStorage), separados por perfil.
-  No hay servidor ni cuenta en la nube: si borras los datos del
-  navegador, se van. Haz copias con el menú ⋯ → Copia de seguridad.
-  El PIN del perfil evita miradas ajenas, pero no cifra nada.
+SEGURIDAD
+  helmet con CSP estricta: los scripts solo se ejecutan si su hash sha256
+    coincide con el del index.html servido, nada de scripts externos.
+  Rate limiting: 600 peticiones por minuto en la API, 20 intentos de
+    acceso cada 15 minutos y 12 sincronizaciones cada 5 minutos.
+  Saneado de todas las entradas: se eliminan caracteres de control,
+    se bloquea la contaminación de prototipos y se limitan tamaños.
+    Todas las consultas usan sentencias preparadas de SQLite.
+  Sesión en cookie HttpOnly, SameSite=Lax y Secure cuando hay HTTPS.
+    El navegador ya no guarda ningún token: un XSS no puede robarla.
+  Comprobación anti CSRF con la cabecera X-Orbita-App en las escrituras.
+  CORS cerrado salvo los orígenes de ALLOWED_ORIGINS.
+  Los tokens de Microsoft se guardan cifrados con AES-256-GCM.
+
+  Antes de exponerlo fuera de tu equipo:
+    JWT_SECRET y ENCRYPTION_KEY largos y aleatorios
+    COOKIE_SECURE=1 y servidor detrás de HTTPS
+    TRUST_PROXY=1 si va tras nginx, Caddy o Cloudflare
+
+DIFERENCIAS ENTRE MÓVIL Y ESCRITORIO
+  La interfaz es la misma; cambia el comportamiento.
+  Móvil: todo por eventos táctiles, áreas de toque de 26 a 56 px,
+    arrastrar manteniendo pulsado, pestañas inferiores, deslizar para
+    cambiar de pantalla y menos elementos por día en el calendario.
+  Escritorio: arrastrar inmediato con el ratón, efectos al pasar por
+    encima, más eventos visibles por día y, a partir de 1600 px, columnas
+    y celdas más amplias.
+  El brillo que seguía al cursor se ha eliminado por completo: ya no hay
+    listener de movimiento del ratón ni variables CSS para ese efecto.
+
+VINCULAR OUTLOOK
+  1. Entra en https://portal.azure.com -> Microsoft Entra ID -> Registros de aplicaciones
+  2. Nueva aplicación, tipo "Cuentas en cualquier directorio y cuentas personales"
+  3. URI de redirección (Web): http://localhost:4000/api/outlook/callback
+  4. Certificados y secretos -> nuevo secreto de cliente
+  5. Permisos de API -> Microsoft Graph -> delegados: User.Read, Mail.Read, offline_access
+  6. Copia el id de aplicación y el secreto en MS_CLIENT_ID y MS_CLIENT_SECRET
+  7. En la app: tu perfil -> Automatizaciones -> Vincular
+
+  La vinculación abre la ventana de Microsoft con el flujo Authorization
+  Code + PKCE. Al volver, la ventana avisa a la app y la tarjeta pasa a
+  mostrar la cuenta vinculada. No hay credenciales de usuario en el
+  código: cada perfil guarda sus propios tokens cifrados.
+
+CONECTAR LA IA
+  El servidor habla dos dialectos: anthropic y openai. Cualquier proveedor
+  compatible con OpenAI vale cambiando tres variables. Pega en tu .env el
+  bloque que quieras y pulsa Probar en Ajustes -> Automatizaciones.
+
+  Google Gemini (gratis, sin tarjeta)
+    LLM_PROVIDER=openai
+    LLM_API_KEY=clave de aistudio.google.com
+    LLM_MODEL=gemini-2.5-flash
+    LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+
+  Groq (gratis, sin tarjeta, muy rápido)
+    LLM_PROVIDER=openai
+    LLM_API_KEY=clave de console.groq.com
+    LLM_MODEL=llama-3.3-70b-versatile
+    LLM_BASE_URL=https://api.groq.com/openai/v1
+
+  OpenRouter (modelos con sufijo :free)
+    LLM_PROVIDER=openai
+    LLM_API_KEY=clave de openrouter.ai
+    LLM_MODEL=meta-llama/llama-3.3-70b-instruct:free
+    LLM_BASE_URL=https://openrouter.ai/api/v1
+
+  Ollama en tu propio PC (gratis del todo y sin enviar nada fuera)
+    LLM_PROVIDER=openai
+    LLM_API_KEY=local
+    LLM_MODEL=llama3.1:8b
+    LLM_BASE_URL=http://localhost:11434/v1
+    LLM_JSON_MODE=0
+
+  Anthropic o OpenAI de pago
+    LLM_PROVIDER=anthropic   LLM_MODEL=claude-sonnet-4-5
+    LLM_PROVIDER=openai      LLM_MODEL=gpt-4o-mini
+
+  LLM_JSON_MODE=0 si el proveedor no admite response_format json_object.
+  El prompt del sistema está en server/src/services/llm.service.js
+
+  Aviso: en los planes gratuitos el proveedor suele poder revisar o
+  entrenar con lo que le envías, y aquí le envías correos tuyos. Para
+  privacidad total usa Ollama en local; si prefieres la nube, un plan de
+  pago barato evita ese uso de tus datos.
+
+QUÉ HACE LA AUTOMATIZACIÓN
+  Cada SYNC_INTERVAL_MINUTES el servidor lee los correos nuevos del buzón,
+  se los pasa a la IA y, si detecta una notificación académica, guarda el
+  evento en SQLite. Si ya existía uno parecido en fechas próximas lo mueve
+  en vez de duplicarlo. El navegador recibe el aviso por SSE y el calendario
+  se actualiza solo, marcando esos eventos con el distintivo IA.
+
+API
+  GET    /api/health
+  GET    /api/auth/profiles
+  POST   /api/auth/register        {name, pin, av, color}
+  POST   /api/auth/login           {id, pin}
+  POST   /api/auth/logout
+  GET    /api/auth/me
+  PUT    /api/auth/me              {name, av, color, prefs, tour}
+  PUT    /api/auth/me/pin          {pin}
+  DELETE /api/auth/me
+  GET    /api/state
+  PUT    /api/state                {items, trash, cats, view}
+  PUT    /api/state/prefs          {prefs, bg, tour, view}
+  GET    /api/events               ?source=outlook
+  POST   /api/events
+  PATCH  /api/events/:id
+  DELETE /api/events/:id
+  GET    /api/categories
+  POST   /api/categories
+  PATCH  /api/categories/:id
+  DELETE /api/categories/:id
+  GET    /api/outlook/status
+  GET    /api/outlook/connect
+  GET    /api/outlook/callback
+  POST   /api/outlook/sync
+  POST   /api/outlook/test-ia
+  POST   /api/outlook/auto         {auto}
+  POST   /api/outlook/disconnect
+  GET    /api/outlook/log
+  GET    /api/stream               SSE
+
+VARIABLES NUEVAS
+  ALLOWED_ORIGINS   orígenes permitidos si abres el frontend en otro dominio
+  COOKIE_NAME       nombre de la cookie de sesión
+  COOKIE_SECURE     1 para exigir HTTPS en la cookie
+  TRUST_PROXY       1 si hay un proxy inverso delante
+
+COPIA DE SEGURIDAD
+  El menú de los tres puntos sigue exportando JSON e ICS.
+  El archivo server/data/orbita.db contiene todo: cópialo y listo.

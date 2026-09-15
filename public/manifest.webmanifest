@@ -1,0 +1,26 @@
+{
+  "id": "/orbita-planner",
+  "name": "Órbita Planner",
+  "short_name": "Órbita",
+  "description": "Planificador personal: calendario, tareas, categorías, hábitos y progreso.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#e9ecf6",
+  "theme_color": "#6c5ce7",
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Hoy", "short_name": "Hoy", "url": "./?vista=dia", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Bandeja", "short_name": "Bandeja", "url": "./?panel=inbox", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
